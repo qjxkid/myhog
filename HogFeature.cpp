@@ -51,7 +51,7 @@ void HogFeature::CreateHogDescriptor_OnePass(cv::Size win_size,cv::Size block_si
 		delete m_cpuhog;
 		m_cpuhog=NULL;
 	}
-
+	m_block_stride = block_stride;
 	m_cpuhog=new cv::HOGDescriptor(win_size,block_size,block_stride,cell_size,nbins);
 }
 
@@ -63,17 +63,12 @@ void HogFeature::ExtractHogFeatures(const cv::Mat &image)
 	for(int i=0;i<m_vec_cpuhog.size();i++)
 	{
 		vector<float> tmpfeatures;
-
-		cv::Mat img(56,72,image.type());
-		cv::resize(image,img,cv::Size(img.cols,img.rows));
-		m_vec_cpuhog[i]->compute(img,tmpfeatures,m_vec_cpuhog[i]->blockStride,cv::Size(0,0));
-
-		//m_cpuhog->compute(image,tmpfeatures,winStride,cv::Size(0,0));
+		m_vec_cpuhog[i]->compute(image,tmpfeatures,m_vec_cpuhog[i]->blockStride,cv::Size(0,0));
 		m_features.insert(m_features.end(),tmpfeatures.begin(),tmpfeatures.end());
 	}
 }
 
-void HogFeature::ExtractHogFeatures(const cv::Mat &image,vector<double> &features)
+void HogFeature::ExtractHogFeatures(const cv::Mat &image,vector<float> &features)
 {
 	features.clear();
 
@@ -88,21 +83,42 @@ void HogFeature::ExtractHogFeatures_OnePass(const cv::Mat &image,cv::Size winStr
 	if(m_cpuhog)
 	{
 		vector<float> tmpfeatures;
-
-		cv::Mat img(56,72,image.type());
-		cv::resize(image,img,cv::Size(img.cols,img.rows));
-		m_cpuhog->compute(img,tmpfeatures,winStride,cv::Size(0,0));
-
-		//m_cpuhog->compute(image,tmpfeatures,winStride,cv::Size(0,0));
+		m_cpuhog->compute(image,tmpfeatures,winStride,cv::Size(0,0));
+		m_featuresdim = tmpfeatures.size();
 		m_features.assign(tmpfeatures.begin(),tmpfeatures.end());
 	}
 }
 
-void HogFeature::ExtractHogFeatures_OnePass(const cv::Mat &image,cv::Size winStride,vector<double> &features)
+void HogFeature::ExtractHogFeatures_OnePass(const cv::Mat &image,cv::Size winStride,vector<float> &features)
 {
 	features.clear();
 
 	ExtractHogFeatures_OnePass(image,winStride);
+
+	if(m_cpuhog)
+	{
+		features=m_features;
+
+	}
+}
+
+void HogFeature::ExtractHogFeatures_OnePass( const cv::Mat &image )
+{
+	m_features.clear();
+	if(m_cpuhog)
+	{
+		vector<float> tmpfeatures;
+		m_cpuhog->compute(image,tmpfeatures,m_block_stride,cv::Size(0,0));
+		m_featuresdim = tmpfeatures.size();
+		m_features.assign(tmpfeatures.begin(),tmpfeatures.end());
+	}
+}
+
+void HogFeature::ExtractHogFeatures_OnePass(const cv::Mat &image, vector<float> &features)
+{
+	features.clear();
+
+	ExtractHogFeatures_OnePass(image);
 
 	if(m_cpuhog)
 	{
